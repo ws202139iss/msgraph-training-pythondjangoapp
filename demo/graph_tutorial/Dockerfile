@@ -1,5 +1,5 @@
 FROM python:3.8
-
+ENV VARI='true'
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         postgresql-client \
@@ -8,13 +8,17 @@ RUN apt-get update \
 # Update pip
 RUN pip install -U pip
 
-WORKDIR /usr/src/app
-
 COPY requirements.txt ./
-RUN pip install -r requirements.txt
-COPY . .
+#RUN pip3 install -r requirements.txt
+RUN set -ex; \
+    pip install -r requirements.txt
 
-RUN python manage.py migrate
+
+ENV APP_HOME /app
+WORKDIR $APP_HOME
+COPY . ./
+
+#RUN python manage.py migrate
 
 EXPOSE 8000
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
