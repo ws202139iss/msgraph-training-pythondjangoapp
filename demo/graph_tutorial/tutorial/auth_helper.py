@@ -27,9 +27,9 @@ def save_cache(request, cache):
 def get_msal_app(cache=None):
   # Initialize the MSAL confidential client
   auth_app = msal.ConfidentialClientApplication(
-    settings['app_id'],
+    os.getenv('APP_ID') or settings['app_id'],
     authority=settings['authority'],
-    client_credential=settings['app_secret'],
+    client_credential=os.getenv('APP_SECRET') or settings['app_secret'],
     token_cache=cache)
 
   return auth_app
