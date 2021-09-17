@@ -1,0 +1,50 @@
+on: [push]
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    
+    - uses: azure/docker-login@v1
+      with:
+        login-server: labds2021.azurecr.io
+        username: ${{ secrets.acr_labds2021_username }}
+        password: ${{ secrets.acr_labds2021_password }}
+    
+    - name: Build and push image to ACR
+      id: build-image
+      run: |
+        docker build "$GITHUB_WORKSPACE/demo/graph_tutorial" -f  "demo/graph_tutorial/Dockerfile" -t labds2021.azurecr.io/flasklab2:${{ github.sha }} --label dockerfile-path=demo/graph_tutorial/Dockerfile
+        docker push labds2021.azurecr.io/flasklab2:${{ github.sha }}
+    
+    - uses: azure/k8s-set-context@v1
+      with:
+         kubeconfig: ${{ secrets.aks_flasklab2_kubeConfig }}
+      id: login
+    
+    - name: Create namespace
+      run: |
+        namespacePresent=`kubectl get namespace | grep djan-lab29d0c | wc -l`
+        if [ $namespacePresent -eq 0 ]
+        then
+            echo `kubectl create namespace djan-lab29d0c`
+        fi
+
+    - uses: azure/k8s-create-secret@v1
+      with:
+        namespace: djan-lab29d0c
+        container-registry-url: labds2021.azurecr.io
+        container-registry-username: ${{ secrets.acr_labds2021_username }}
+        container-registry-password: ${{ secrets.acr_labds2021_password }}
+        secret-name: flasklab2dockerauth
+       
+    - uses: azure/k8s-deploy@v1.2
+      with:
+        namespace: djan-lab29d0c
+        manifests: |
+          manifests/deployment.yml
+          manifests/service.yml
+        images: |
+          labds2021.azurecr.io/flasklab2:${{ github.sha }}
+        imagepullsecrets: |
+          flasklab2dockerauth
