@@ -106,8 +106,6 @@ venv.bak/
 # VS Code
 .vscode/
 
-# OAuth settings
-oauth_settings.yml
 
 QSTemp/
 PythonDjangoQuickStart.zip
